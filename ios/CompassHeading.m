@@ -19,7 +19,7 @@ RCT_EXPORT_MODULE()
 - (instancetype)init {
     if (self = [super init]) {
         isObserving = NO;
-        
+
         if ([CLLocationManager headingAvailable]) {
             locationManager = [[CLLocationManager alloc] init];
             locationManager.delegate = self;
@@ -53,28 +53,12 @@ RCT_EXPORT_MODULE()
     if (newHeading.headingAccuracy < 0) {
         return;
     }
-    
+
     dispatch_sync(dispatch_get_main_queue(), ^{
-        NSInteger heading = newHeading.trueHeading;
-        
-        // if the device supports UI rotation, we need to adjust
-        // our heading value since it will default to
-        // top of the device in portrait
-        UIInterfaceOrientation interfaceOrientation = [[UIApplication sharedApplication] statusBarOrientation];
-        
-        if(interfaceOrientation == UIInterfaceOrientationLandscapeLeft){
-            heading = (heading + 270) % 360;
-        }
-        else if(interfaceOrientation == UIInterfaceOrientationLandscapeRight){
-            heading = (heading + 90) % 360;
-        }
-        else if(interfaceOrientation == UIInterfaceOrientationPortraitUpsideDown){
-            heading = (heading + 180) % 360;
-        }
-        
         if(isObserving){
             [self sendEventWithName:kHeadingUpdated body:@{
-                @"heading": @(heading),
+                @"trueHeading": @(newHeading.trueHeading),
+                @"magneticHeading": @(newHeading.magneticHeading),
                 @"accuracy": @(newHeading.headingAccuracy)
             }];
         }
