@@ -34,9 +34,11 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
     private Sensor gsensor;
     private Sensor msensor;
+    private Sensor osensor;
 
     private float[] mGravity = new float[3];
     private float[] mGeomagnetic = new float[3];
+    private float[] mHeading = new float[1];
 
     private float[] R = new float[9];
     private float[] I = new float[9];
@@ -61,9 +63,11 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
             gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            osensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
             sensorManager.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME);
             sensorManager.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(this, osensor, SensorManager.SENSOR_DELAY_GAME);
 
             mFilter = filter;
             promise.resolve(true);
@@ -87,7 +91,7 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
             SensorManager manager = (SensorManager) mApplicationContext.getSystemService(Context.SENSOR_SERVICE);
 
             boolean res = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null &&
-                manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null;
+                    manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null;
 
             promise.resolve(res);
         }
@@ -123,6 +127,12 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
             }
 
+            if (event.sensor.getType() == Sensor.TYPE_ORIENTATION) {
+
+                mHeading[0] = Math.round(event.values[0]);
+
+            }
+
             boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
 
             if (success) {
@@ -155,12 +165,23 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
                     WritableMap params = Arguments.createMap();
                     params.putDouble("heading", mAzimuth);
+                    params.putDouble("simpleheading", mHeading[0]);
                     params.putDouble("accuracy", 1.0);
 
                     getReactApplicationContext()
+                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                            .emit("HeadingUpdated", params);
+                }
+            }
+            else{
+                WritableMap params = Arguments.createMap();
+                params.putDouble("heading", mHeading[0]);
+                params.putDouble("simpleheading", mHeading[0]);
+                params.putDouble("accuracy", 1.0);
+
+                getReactApplicationContext()
                         .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                         .emit("HeadingUpdated", params);
-                }
             }
         }
 
